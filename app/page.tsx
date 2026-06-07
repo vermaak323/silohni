@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import styles from "./page.module.css";
 
 const latestArrivals = [
@@ -92,7 +93,107 @@ export default function Home() {
   const [isPlaying, setIsPlaying] = useState(true);
   const [scrollProgress, setScrollProgress] = useState(0);
 
+  // Auth & Profile states
+  const [isAuthDrawerOpen, setIsAuthDrawerOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
+  const [user, setUser] = useState<{ name: string; email: string; role?: string } | null>(null);
+  const [nameInput, setNameInput] = useState("");
+  const [emailInput, setEmailInput] = useState("");
+  const [passwordInput, setPasswordInput] = useState("");
+  const [authError, setAuthError] = useState("");
+
   const scrollRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+
+  const [announcement, setAnnouncement] = useState("Free global shipping on organic linens this weekend.");
+
+  // Load session & announcement on mount
+  useEffect(() => {
+    const savedUser = localStorage.getItem("silohni_user");
+    if (savedUser) {
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch (err) {
+        localStorage.removeItem("silohni_user");
+      }
+    }
+    const savedMsg = localStorage.getItem("silohni_announcement");
+    if (savedMsg) {
+      setAnnouncement(savedMsg);
+    }
+  }, []);
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!emailInput || !passwordInput) {
+      setAuthError("Please fill in all fields.");
+      return;
+    }
+    
+    // Explicit Test Credentials Logic
+    if (emailInput === "admin@silohni.com") {
+      if (passwordInput === "admin123") {
+        const adminUser = {
+          name: "Admin Administrator",
+          email: emailInput,
+          role: "admin",
+        };
+        setUser(adminUser);
+        localStorage.setItem("silohni_user", JSON.stringify(adminUser));
+        setAuthError("");
+        setEmailInput("");
+        setPasswordInput("");
+        // Redirect Admin immediately to full dashboard
+        router.push("/admin");
+        setIsAuthDrawerOpen(false);
+        return;
+      } else {
+        setAuthError("Incorrect password for Administrator.");
+        return;
+      }
+    }
+
+    if (emailInput === "user@silohni.com" && passwordInput !== "user123") {
+      setAuthError("Incorrect password for Test User.");
+      return;
+    }
+
+    // Accept any other valid input
+    const memberUser = {
+      name: emailInput.split("@")[0].charAt(0).toUpperCase() + emailInput.split("@")[0].slice(1),
+      email: emailInput,
+      role: "member",
+    };
+    setUser(memberUser);
+    localStorage.setItem("silohni_user", JSON.stringify(memberUser));
+    setAuthError("");
+    setEmailInput("");
+    setPasswordInput("");
+  };
+
+  const handleRegister = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!nameInput || !emailInput || !passwordInput) {
+      setAuthError("Please fill in all fields.");
+      return;
+    }
+    const memberUser = {
+      name: nameInput,
+      email: emailInput,
+      role: "member",
+    };
+    setUser(memberUser);
+    localStorage.setItem("silohni_user", JSON.stringify(memberUser));
+    setAuthError("");
+    setNameInput("");
+    setEmailInput("");
+    setPasswordInput("");
+  };
+
+  const handleSignOut = () => {
+    localStorage.removeItem("silohni_user");
+    setUser(null);
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -108,6 +209,28 @@ export default function Home() {
       window.removeEventListener("scroll", handleScroll);
     };
   }, []);
+
+  // Intersection Observer scroll reveal effect
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add(styles.revealed);
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: "0px 0px -50px 0px" }
+    );
+
+    const elements = document.querySelectorAll(`.${styles.scrollReveal}`);
+    elements.forEach((el) => observer.observe(el));
+
+    return () => {
+      elements.forEach((el) => observer.unobserve(el));
+    };
+  }, [activeCategory]);
 
   const filteredItems = activeCategory === "All"
     ? latestArrivals
@@ -167,10 +290,10 @@ export default function Home() {
         <div className={styles.headerInner}>
           <div className={styles.logo}>
             <Image
-              src="/silohniLogo.png"
-              alt="Silohani Logo"
-              width={48}
-              height={48}
+              src="/silohniLogoLight.png"
+              alt="Silohni Logo"
+              width={84}
+              height={56}
               priority
               className={styles.logoImage}
             />
@@ -206,7 +329,7 @@ export default function Home() {
               </svg>
             </div>
             {/* Profile Icon */}
-            <div className={`${styles.actionIcon} ${styles.desktopOnlyIcon}`} aria-label="Profile" id="action-profile">
+            <div className={styles.actionIcon} aria-label="Profile" id="action-profile" onClick={() => setIsAuthDrawerOpen(true)}>
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                 <circle cx="12" cy="7" r="4"></circle>
@@ -222,6 +345,13 @@ export default function Home() {
             </div>
           </div>
         </div>
+        {announcement && (
+          <div className={styles.announcementBar}>
+            <div className={styles.marqueeText}>
+              {announcement}
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Mobile Menu Drawer */}
@@ -241,13 +371,207 @@ export default function Home() {
         </nav>
       </div>
 
+      {/* Auth & Profile Drawer Slide-over */}
+      <div 
+        className={`${styles.authDrawerBackdrop} ${isAuthDrawerOpen ? styles.authDrawerBackdropOpen : ""}`} 
+        onClick={() => setIsAuthDrawerOpen(false)} 
+      />
+      <div className={`${styles.authDrawer} ${isAuthDrawerOpen ? styles.authDrawerOpenState : ""}`}>
+        <div className={styles.authDrawerClose} onClick={() => { setIsAuthDrawerOpen(false); setAuthError(""); }}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </div>
+
+        <div className={styles.authDrawerContent}>
+          {!user ? (
+            <div className={styles.authFormWrapper}>
+              <div className={styles.authTabs}>
+                <button 
+                  className={`${styles.authTabBtn} ${authMode === "signin" ? styles.authTabBtnActive : ""}`}
+                  onClick={() => { setAuthMode("signin"); setAuthError(""); }}
+                >
+                  Sign In
+                </button>
+                <button 
+                  className={`${styles.authTabBtn} ${authMode === "signup" ? styles.authTabBtnActive : ""}`}
+                  onClick={() => { setAuthMode("signup"); setAuthError(""); }}
+                >
+                  Register
+                </button>
+              </div>
+
+              <h2 className={styles.authTitle}>
+                {authMode === "signin" ? "Welcome Back to Silohni" : "Join the Silohni Community"}
+              </h2>
+              <p className={styles.authSubtitle}>
+                {authMode === "signin" 
+                  ? "Access your saved addresses, check order status, and track delivery details." 
+                  : "Create an account for natural lifestyle inspiration, order history tracking, and fast checkout."}
+              </p>
+
+              <form onSubmit={authMode === "signin" ? handleLogin : handleRegister} className={styles.authForm}>
+                {authError && <div className={styles.authErrorAlert}>{authError}</div>}
+                
+                {authMode === "signup" && (
+                  <div className={styles.inputGroup}>
+                    <label htmlFor="auth-name" className={styles.inputLabel}>Full Name</label>
+                    <input 
+                      type="text" 
+                      id="auth-name" 
+                      className={styles.authInputField} 
+                      placeholder="Jane Doe"
+                      value={nameInput}
+                      onChange={(e) => setNameInput(e.target.value)}
+                    />
+                  </div>
+                )}
+
+                <div className={styles.inputGroup}>
+                  <label htmlFor="auth-email" className={styles.inputLabel}>Email Address</label>
+                  <input 
+                    type="email" 
+                    id="auth-email" 
+                    className={styles.authInputField} 
+                    placeholder="you@example.com"
+                    value={emailInput}
+                    onChange={(e) => setEmailInput(e.target.value)}
+                  />
+                </div>
+
+                <div className={styles.inputGroup}>
+                  <label htmlFor="auth-password" className={styles.inputLabel}>Password</label>
+                  <input 
+                    type="password" 
+                    id="auth-password" 
+                    className={styles.authInputField} 
+                    placeholder="••••••••"
+                    value={passwordInput}
+                    onChange={(e) => setPasswordInput(e.target.value)}
+                  />
+                </div>
+
+                <button type="submit" className={styles.authSubmitBtn}>
+                  {authMode === "signin" ? "Sign In to Account" : "Register Account"}
+                </button>
+              </form>
+
+              <div className={styles.socialDivider}>
+                <span>or continue with</span>
+              </div>
+
+              <div className={styles.socialAuthButtons}>
+                <button className={styles.socialBtn} onClick={() => {
+                  const u = { name: "Google Guest", email: "google@guest.com", role: "member" };
+                  setUser(u);
+                  localStorage.setItem("silohni_user", JSON.stringify(u));
+                }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12.24 10.285V13.4h6.887c-.275 1.565-1.88 4.604-6.887 4.604-4.33 0-7.866-3.577-7.866-8s3.536-8 7.866-8c2.46 0 4.105 1.025 5.047 1.926l2.427-2.334C17.955 2.192 15.34 1 12.24 1 5.92 1 1 5.92 1 12s4.92 11 11.24 11c6.6 0 11-4.65 11-11.19 0-.756-.08-1.333-.177-1.815H12.24z"/>
+                  </svg>
+                  Google
+                </button>
+                <button className={styles.socialBtn} onClick={() => {
+                  const u = { name: "Apple User", email: "apple@guest.com", role: "member" };
+                  setUser(u);
+                  localStorage.setItem("silohni_user", JSON.stringify(u));
+                }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 4.17c.66-.81 1.11-1.93.99-3.06-1 .04-2.21.67-2.93 1.49-.62.69-1.16 1.84-1.01 2.96 1.12.09 2.27-.57 2.95-1.39z"/>
+                  </svg>
+                  Apple
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className={styles.profileWrapper}>
+              <div className={styles.profileHeader}>
+                <div className={styles.profileAvatar} style={user.role === "admin" ? { backgroundColor: "var(--color-dark-espresso)", color: "var(--text-light)" } : {}}>
+                  {user.name.charAt(0).toUpperCase()}
+                </div>
+                <h2 className={styles.profileName}>{user.name}</h2>
+                <p className={styles.profileEmail}>{user.email}</p>
+                <span className={`${styles.profileBadge} ${user.role === "admin" ? styles.profileBadgeAdmin : ""}`}>
+                  {user.role === "admin" ? "Store Administrator" : "Member since 2026"}
+                </span>
+
+                <button 
+                  onClick={() => {
+                    if (user.role === "admin") {
+                      router.push("/admin");
+                    } else {
+                      router.push("/profile");
+                    }
+                    setIsAuthDrawerOpen(false);
+                  }} 
+                  className={styles.fullProfileBtn}
+                >
+                  {user.role === "admin" ? "Go to Command Centre" : "Go to Full Profile Page"} &rarr;
+                </button>
+              </div>
+
+              <div className={styles.profileSection}>
+                <h3 className={styles.profileSectionTitle}>Recent Orders</h3>
+                <div className={styles.orderHistory}>
+                  <div className={styles.orderCard}>
+                    <div className={styles.orderMeta}>
+                      <span className={styles.orderId}>Order #SL-9982</span>
+                      <span className={`${styles.orderStatus} ${styles.statusDelivered}`}>Delivered</span>
+                    </div>
+                    <p className={styles.orderDate}>Placed on June 2, 2026</p>
+                    <p className={styles.orderItems}>Minimalist Terracotta Vase, Linen Hand Towel</p>
+                    <div className={styles.orderFooter}>
+                      <span>Total: <strong>$182.00</strong></span>
+                      <button className={styles.orderActionBtn}>Track Delivery</button>
+                    </div>
+                  </div>
+
+                  <div className={styles.orderCard}>
+                    <div className={styles.orderMeta}>
+                      <span className={styles.orderId}>Order #SL-9941</span>
+                      <span className={`${styles.orderStatus} ${styles.statusProcessing}`}>Processing</span>
+                    </div>
+                    <p className={styles.orderDate}>Placed on May 15, 2026</p>
+                    <p className={styles.orderItems}>Woven Wool Throw Blanket</p>
+                    <div className={styles.orderFooter}>
+                      <span>Total: <strong>$145.00</strong></span>
+                      <button className={styles.orderActionBtn}>View Details</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.profileSection}>
+                <h3 className={styles.profileSectionTitle}>Shipping Details</h3>
+                <div className={styles.addressCard}>
+                  <div className={styles.addressHeader}>
+                    <strong>Home Address</strong>
+                    <span className={styles.defaultLabel}>Default</span>
+                  </div>
+                  <p className={styles.addressText}>
+                    128 Artisan Way, Suite 4B<br />
+                    Portland, OR 97201<br />
+                    United States
+                  </p>
+                </div>
+              </div>
+
+              <button onClick={handleSignOut} className={styles.signOutBtn}>
+                Sign Out from Account
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
       <div className={styles.page}>
 
       {/* Hero Section */}
       <section className={styles.hero} id="hero-section">
         <Image
           src="/images/hero_banner.png"
-          alt="Silohani Studio banner featuring minimalist ceramics and linens"
+          alt="Silohni Studio banner featuring minimalist ceramics and linens"
           fill
           priority
           className={styles.heroImage}
@@ -265,10 +589,10 @@ export default function Home() {
       </section>
 
       {/* Latest Arrival Section */}
-      <section className={`${styles.section} scroll-animate`} id="latest-arrival-section">
+      <section className={`${styles.section} ${styles.scrollReveal}`} id="latest-arrival-section">
         <div className={styles.latestSectionWrapper}>
           {/* Left Column: Heading and Info */}
-          <div className={styles.latestLeftCol}>
+          <div className={`${styles.latestLeftCol} ${styles.scrollReveal} ${styles.stagger1}`}>
             <span className={styles.carouselCardTag}>New Season</span>
             <h2 className={styles.sectionTitle} style={{ textAlign: "left", margin: 0, alignSelf: "flex-start" }}>Latest Arrival</h2>
             <p className={styles.heroDesc} style={{ color: "var(--color-warm-gray)", fontSize: "14px" }}>
@@ -280,7 +604,7 @@ export default function Home() {
           </div>
 
           {/* Right Column: Tabs and Carousel */}
-          <div className={styles.latestRightCol}>
+          <div className={`${styles.latestRightCol} ${styles.scrollReveal} ${styles.stagger2}`}>
             {/* Filter Tabs */}
             <div className={styles.filterTabs}>
               {categories.map((cat) => (
@@ -307,8 +631,8 @@ export default function Home() {
               ref={scrollRef}
               onScroll={handleScrollTrack}
             >
-              {filteredItems.map((item) => (
-                <div className={styles.overlayCard} key={item.id}>
+              {filteredItems.map((item, index) => (
+                <div className={`${styles.overlayCard} ${styles.scrollReveal} ${styles[`stagger${(index % 4) + 1}`]}`} key={item.id}>
                   <Image
                     src={item.src}
                     alt={item.alt}
@@ -379,11 +703,11 @@ export default function Home() {
       </section>
 
       {/* Best Collections Section */}
-      <section className={`${styles.section} scroll-animate`} id="best-collections-section">
+      <section className={`${styles.section} ${styles.scrollReveal}`} id="best-collections-section">
         <h2 className={styles.sectionTitle}>Best collections</h2>
         <div className={styles.bestGrid}>
           {/* Card 1 - Tall Left */}
-          <div className={styles.bestCard1} id="best-collection-1">
+          <div className={`${styles.bestCard1} ${styles.scrollReveal} ${styles.stagger1}`} id="best-collection-1">
             <Image
               src="/images/best_1.png"
               alt="Organic Linen Apparel Collection"
@@ -398,7 +722,7 @@ export default function Home() {
           </div>
 
           {/* Card 2 - Middle Top */}
-          <div className={styles.bestCard2} id="best-collection-2">
+          <div className={`${styles.bestCard2} ${styles.scrollReveal} ${styles.stagger2}`} id="best-collection-2">
             <Image
               src="/images/best_2.png"
               alt="Artisan Tableware Collection"
@@ -413,7 +737,7 @@ export default function Home() {
           </div>
 
           {/* Card 3 - Middle Bottom */}
-          <div className={styles.bestCard3} id="best-collection-3">
+          <div className={`${styles.bestCard3} ${styles.scrollReveal} ${styles.stagger3}`} id="best-collection-3">
             <Image
               src="/images/best_3.png"
               alt="Cosy Home Living Space Decor"
@@ -428,7 +752,7 @@ export default function Home() {
           </div>
 
           {/* Card 4 - Right Top */}
-          <div className={styles.bestCard4} id="best-collection-4">
+          <div className={`${styles.bestCard4} ${styles.scrollReveal} ${styles.stagger4}`} id="best-collection-4">
             <Image
               src="/images/best_4.png"
               alt="Organic Spun Yarn and Threads"
@@ -443,7 +767,7 @@ export default function Home() {
           </div>
 
           {/* Card 5 - Right Bottom */}
-          <div className={styles.bestCard5} id="best-collection-5">
+          <div className={`${styles.bestCard5} ${styles.scrollReveal} ${styles.stagger5}`} id="best-collection-5">
             <Image
               src="/images/best_5.png"
               alt="Home Fragrances and Candles"
@@ -460,7 +784,7 @@ export default function Home() {
       </section>
 
       {/* Image Gallery Section */}
-      <section className={`${styles.section} scroll-animate`} id="image-gallery-section" style={{ padding: "80px 0", overflow: "visible" }}>
+      <section className={`${styles.section} ${styles.scrollReveal}`} id="image-gallery-section" style={{ padding: "80px 0", overflow: "visible" }}>
         <h2 className={styles.sectionTitle}>Image Gallery</h2>
         
         <div className={styles.waveGallerySection}>
@@ -479,12 +803,12 @@ export default function Home() {
 
           {/* Cards Container */}
           <div className={styles.waveGalleryContainer}>
-            {galleryItems.map((item) => (
+            {galleryItems.map((item, index) => (
               <div
                 key={item.id}
                 className={`${styles.wavePolaroid} ${
                   item.type === "peak" ? styles.wavePolaroidPeak : styles.wavePolaroidTrough
-                }`}
+                } ${styles.scrollReveal} ${styles[`stagger${(index % 4) + 1}`]}`}
               >
                 {/* Hanging Line */}
                 <div className={styles.wavePolaroidLinkLine} />
@@ -506,11 +830,11 @@ export default function Home() {
       </section>
 
       {/* Testimonials Section */}
-      <section className={`${styles.section} scroll-animate`} id="testimonials-section">
+      <section className={`${styles.section} ${styles.scrollReveal}`} id="testimonials-section">
         <h2 className={styles.sectionTitle}>Testimonials</h2>
         <div className={styles.testimonialsGrid}>
           {/* Testimonial 1 */}
-          <div className={styles.testimonialCard} id="testimonial-card-1">
+          <div className={`${styles.testimonialCard} ${styles.scrollReveal} ${styles.stagger1}`} id="testimonial-card-1">
             <div className={styles.pendantLine}>
               <div className={styles.pendantDot} />
             </div>
@@ -532,7 +856,7 @@ export default function Home() {
           </div>
 
           {/* Testimonial 2 */}
-          <div className={styles.testimonialCard} id="testimonial-card-2">
+          <div className={`${styles.testimonialCard} ${styles.scrollReveal} ${styles.stagger2}`} id="testimonial-card-2">
             <div className={styles.pendantLine}>
               <div className={styles.pendantDot} />
             </div>
@@ -547,7 +871,7 @@ export default function Home() {
             </div>
             <div className={styles.speechBubble}>
               <p className={styles.testimonialText}>
-                &ldquo;The woolen throws are incredibly cozy and heavy-weight. You can tell they were woven with care. Silohani is my absolute favorite home boutique now.&rdquo;
+                &ldquo;The woolen throws are incredibly cozy and heavy-weight. You can tell they were woven with care. Silohni is my absolute favorite home boutique now.&rdquo;
               </p>
               <span className={styles.testimonialAuthor}>— Marcus V.</span>
             </div>
@@ -556,17 +880,17 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className={styles.footer} id="footer">
-        <div className={styles.footerLogo}>Silohani</div>
-        <nav className={styles.footerLinks} aria-label="Footer Navigation">
+      <footer className={`${styles.footer} ${styles.scrollReveal}`} id="footer">
+        <div className={`${styles.footerLogo} ${styles.scrollReveal} ${styles.stagger1}`}>Silohni</div>
+        <nav className={`${styles.footerLinks} ${styles.scrollReveal} ${styles.stagger2}`} aria-label="Footer Navigation">
           <a href="#" className={styles.footerLink}>About Us</a>
           <a href="#" className={styles.footerLink}>Store Policy</a>
           <a href="#" className={styles.footerLink}>FAQ</a>
           <a href="#" className={styles.footerLink}>Careers</a>
           <a href="#" className={styles.footerLink}>Newsletter</a>
         </nav>
-        <div className={styles.copyright}>
-          &copy; {new Date().getFullYear()} Silohani. All rights reserved. Designed with organic simplicity.
+        <div className={`${styles.copyright} ${styles.scrollReveal} ${styles.stagger3}`}>
+          &copy; {new Date().getFullYear()} Silohni. All rights reserved. Designed with organic simplicity.
         </div>
       </footer>
     </div>
