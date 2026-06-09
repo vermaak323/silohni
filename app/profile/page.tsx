@@ -25,10 +25,7 @@ export default function ProfilePage() {
       setNameInput(parsed.name);
       setEmailInput(parsed.email);
       
-      // If admin, route to admin panel directly
-      if (parsed.role === "admin") {
-        router.push("/admin");
-      }
+
     } catch (err) {
       localStorage.removeItem("silohni_user");
       router.push("/");
