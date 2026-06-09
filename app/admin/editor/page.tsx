@@ -15,6 +15,10 @@ interface ProductItem {
   price: string;
   category: string;
   stock: number;
+  imageUrl: string;
+  otherImageUrls?: string[];
+  originalPrice?: number | null;
+  sizes?: string[];
 }
 
 export default function StorefrontVisualEditor() {
@@ -39,18 +43,41 @@ export default function StorefrontVisualEditor() {
       { id: "best-4", title: "Raw Organic Yarn", subtitle: "Natural Fibers", imageUrl: "/images/best_4.png" },
       { id: "best-5", title: "Home Fragrances", subtitle: "Candles & Scents", imageUrl: "/images/best_5.png" }
     ],
-    latestArrivalIds: [] as string[]
+    latestArrivalIds: [] as string[],
+    galleryItems: [
+      { id: "gallery-1", src: "/images/gallery_1.png", alt: "Cotton Anarkali Linen Dress", title: "Cotton Anarkali", type: "trough" },
+      { id: "gallery-2", src: "/images/gallery_2.png", alt: "Silk Straight Kurta", title: "Silk Straight", type: "peak" },
+      { id: "gallery-3", src: "/images/gallery_3.png", alt: "Georgette Flared Dress", title: "Georgette Flared", type: "trough" },
+      { id: "gallery-4", src: "/images/gallery_4.png", alt: "Chanderi Blend Suit", title: "Chanderi Blend", type: "peak" }
+    ],
+    testimonials: [
+      { id: "testimonial-1", name: "Sarah J.", avatarUrl: "/images/avatar_1.png", text: "Absolutely fell in love with their ceramics! The earthy finish and minimal design are perfect. The packaging was also completely plastic-free." },
+      { id: "testimonial-2", name: "Marcus V.", avatarUrl: "/images/avatar_2.png", text: "The woolen throws are incredibly cozy and heavy-weight. You can tell they were woven with care. Silohni is my absolute favorite home boutique now." }
+    ]
   });
 
   // Modal Editing States
-  const [activeModal, setActiveModal] = useState<"hero" | "collection" | "product-add" | "product-edit" | null>(null);
+  const [activeModal, setActiveModal] = useState<"hero" | "collection" | "product-add" | "product-edit" | "gallery" | "testimonial" | null>(null);
   const [selectedColIndex, setSelectedColIndex] = useState<number | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<ProductItem | null>(null);
+  const [selectedGalleryIndex, setSelectedGalleryIndex] = useState<number | null>(null);
+  const [selectedTestimonialIndex, setSelectedTestimonialIndex] = useState<number | null>(null);
 
   // Form Field Temporary Values
   const [heroForm, setHeroForm] = useState({ ...storefrontConfig.hero });
   const [colForm, setColForm] = useState({ title: "", subtitle: "", imageUrl: "" });
-  const [productForm, setProductForm] = useState({ name: "", category: "Pottery", price: "", stock: "10", imageUrl: "" });
+  const [productForm, setProductForm] = useState({ 
+    name: "", 
+    category: "", 
+    price: "", 
+    stock: "10", 
+    imageUrl: "", 
+    otherImageUrls: [] as string[],
+    originalPrice: "",
+    sizes: ""
+  });
+  const [galleryForm, setGalleryForm] = useState({ title: "", alt: "", src: "", type: "peak" });
+  const [testimonialForm, setTestimonialForm] = useState({ name: "", text: "", avatarUrl: "" });
 
   // Upload progress states
   const [isUploading, setIsUploading] = useState(false);
@@ -92,7 +119,22 @@ export default function StorefrontVisualEditor() {
     const savedConfig = localStorage.getItem("silohni_storefront_config");
     if (savedConfig) {
       try {
-        setStorefrontConfig(JSON.parse(savedConfig));
+        const parsed = JSON.parse(savedConfig);
+        if (!parsed.galleryItems) {
+          parsed.galleryItems = [
+            { id: "gallery-1", src: "/images/gallery_1.png", alt: "Cotton Anarkali Linen Dress", title: "Cotton Anarkali", type: "trough" },
+            { id: "gallery-2", src: "/images/gallery_2.png", alt: "Silk Straight Kurta", title: "Silk Straight", type: "peak" },
+            { id: "gallery-3", src: "/images/gallery_3.png", alt: "Georgette Flared Dress", title: "Georgette Flared", type: "trough" },
+            { id: "gallery-4", src: "/images/gallery_4.png", alt: "Chanderi Blend Suit", title: "Chanderi Blend", type: "peak" }
+          ];
+        }
+        if (!parsed.testimonials) {
+          parsed.testimonials = [
+            { id: "testimonial-1", name: "Sarah J.", avatarUrl: "/images/avatar_1.png", text: "Absolutely fell in love with their ceramics! The earthy finish and minimal design are perfect. The packaging was also completely plastic-free." },
+            { id: "testimonial-2", name: "Marcus V.", avatarUrl: "/images/avatar_2.png", text: "The woolen throws are incredibly cozy and heavy-weight. You can tell they were woven with care. Silohni is my absolute favorite home boutique now." }
+          ];
+        }
+        setStorefrontConfig(parsed);
       } catch (e) {}
     }
 
@@ -105,17 +147,40 @@ export default function StorefrontVisualEditor() {
       const res = await fetch("/api/products");
       if (res.ok) {
         const data = await res.json();
-        const formatted = data.map((p: any) => ({
-          id: p.$id,
-          src: p.imageUrl,
-          alt: p.name,
-          tag: p.category,
-          name: p.name,
-          price: `$${p.price.toFixed(2)}`,
-          category: p.category,
-          stock: p.stock || 0,
-          imageUrl: p.imageUrl
-        }));
+        const formatted = data.map((p: any) => {
+          let parsedOthers: string[] = [];
+          if (p.otherImageUrls) {
+            try {
+              parsedOthers = JSON.parse(p.otherImageUrls);
+            } catch (e) {
+              parsedOthers = [];
+            }
+          }
+          let parsedSizes: string[] = [];
+          if (p.sizes) {
+            try {
+              parsedSizes = JSON.parse(p.sizes);
+            } catch (e) {
+              if (typeof p.sizes === "string") {
+                parsedSizes = p.sizes.split(",").map((s: string) => s.trim()).filter(Boolean);
+              }
+            }
+          }
+          return {
+            id: p.$id,
+            src: p.imageUrl,
+            alt: p.name,
+            tag: p.category,
+            name: p.name,
+            price: `₹${p.price.toFixed(2)}`,
+            category: p.category,
+            stock: p.stock || 0,
+            imageUrl: p.imageUrl,
+            otherImageUrls: parsedOthers,
+            originalPrice: p.originalPrice || null,
+            sizes: parsedSizes
+          };
+        });
         setProducts(formatted);
       }
     } catch (err) {
@@ -238,7 +303,7 @@ export default function StorefrontVisualEditor() {
 
   // Product Add Actions
   const openAddProduct = () => {
-    setProductForm({ name: "", category: "Pottery", price: "", stock: "10", imageUrl: "" });
+    setProductForm({ name: "", category: "Pottery", price: "", stock: "10", imageUrl: "", otherImageUrls: [], originalPrice: "", sizes: "" });
     setActiveModal("product-add");
   };
 
@@ -248,6 +313,22 @@ export default function StorefrontVisualEditor() {
     try {
       const url = await handleCloudinaryUpload(file);
       setProductForm(prev => ({ ...prev, imageUrl: url }));
+    } catch (err) {}
+  };
+
+  const handleOtherImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    try {
+      const newUrls: string[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const url = await handleCloudinaryUpload(files[i]);
+        newUrls.push(url);
+      }
+      setProductForm(prev => ({
+        ...prev,
+        otherImageUrls: [...prev.otherImageUrls, ...newUrls]
+      }));
     } catch (err) {}
   };
 
@@ -266,6 +347,9 @@ export default function StorefrontVisualEditor() {
           price: parseFloat(productForm.price),
           stock: parseInt(productForm.stock, 10) || 10,
           imageUrl: productForm.imageUrl,
+          otherImageUrls: productForm.otherImageUrls,
+          originalPrice: productForm.originalPrice ? parseFloat(productForm.originalPrice) : null,
+          sizes: productForm.sizes ? productForm.sizes.split(",").map((s: string) => s.trim()).filter(Boolean) : [],
         })
       });
       if (res.ok) {
@@ -292,9 +376,12 @@ export default function StorefrontVisualEditor() {
     setProductForm({
       name: p.name,
       category: p.category,
-      price: p.price.replace("$", ""),
+      price: p.price.replace("₹", "").replace("$", ""),
       stock: String(p.stock),
-      imageUrl: p.src
+      imageUrl: p.src,
+      otherImageUrls: p.otherImageUrls || [],
+      originalPrice: p.originalPrice ? String(p.originalPrice) : "",
+      sizes: p.sizes ? p.sizes.join(", ") : ""
     });
     setActiveModal("product-edit");
   };
@@ -312,6 +399,9 @@ export default function StorefrontVisualEditor() {
           price: parseFloat(productForm.price),
           stock: parseInt(productForm.stock, 10),
           imageUrl: productForm.imageUrl,
+          otherImageUrls: productForm.otherImageUrls,
+          originalPrice: productForm.originalPrice ? parseFloat(productForm.originalPrice) : null,
+          sizes: productForm.sizes ? productForm.sizes.split(",").map((s: string) => s.trim()).filter(Boolean) : [],
         })
       });
       if (res.ok) {
@@ -325,6 +415,84 @@ export default function StorefrontVisualEditor() {
     } catch (e) {
       alert("Error updating product.");
     }
+  };
+
+  // Gallery Actions
+  const openEditGallery = (idx: number) => {
+    setSelectedGalleryIndex(idx);
+    const item = storefrontConfig.galleryItems?.[idx] || { title: "", alt: "", src: "", type: "peak" };
+    setGalleryForm({
+      title: item.title,
+      alt: item.alt || item.title,
+      src: item.src,
+      type: item.type || "peak"
+    });
+    setActiveModal("gallery");
+  };
+
+  const handleGalleryFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const url = await handleCloudinaryUpload(file);
+      setGalleryForm(prev => ({ ...prev, src: url }));
+    } catch (err) {}
+  };
+
+  const handleSaveGallery = () => {
+    if (selectedGalleryIndex === null) return;
+    const updated = [...(storefrontConfig.galleryItems || [])];
+    updated[selectedGalleryIndex] = {
+      ...updated[selectedGalleryIndex],
+      title: galleryForm.title,
+      alt: galleryForm.alt,
+      src: galleryForm.src,
+      type: galleryForm.type
+    };
+    saveConfig({
+      ...storefrontConfig,
+      galleryItems: updated
+    });
+    setActiveModal(null);
+    setSelectedGalleryIndex(null);
+  };
+
+  // Testimonials Actions
+  const openEditTestimonial = (idx: number) => {
+    setSelectedTestimonialIndex(idx);
+    const item = storefrontConfig.testimonials?.[idx] || { name: "", text: "", avatarUrl: "" };
+    setTestimonialForm({
+      name: item.name,
+      text: item.text,
+      avatarUrl: item.avatarUrl
+    });
+    setActiveModal("testimonial");
+  };
+
+  const handleTestimonialFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const url = await handleCloudinaryUpload(file);
+      setTestimonialForm(prev => ({ ...prev, avatarUrl: url }));
+    } catch (err) {}
+  };
+
+  const handleSaveTestimonial = () => {
+    if (selectedTestimonialIndex === null) return;
+    const updated = [...(storefrontConfig.testimonials || [])];
+    updated[selectedTestimonialIndex] = {
+      ...updated[selectedTestimonialIndex],
+      name: testimonialForm.name,
+      text: testimonialForm.text,
+      avatarUrl: testimonialForm.avatarUrl
+    };
+    saveConfig({
+      ...storefrontConfig,
+      testimonials: updated
+    });
+    setActiveModal(null);
+    setSelectedTestimonialIndex(null);
   };
 
   // Showcase Toggle
@@ -547,6 +715,83 @@ export default function StorefrontVisualEditor() {
             })}
           </div>
         </section>
+
+        {/* Image Gallery Section */}
+        <section className={homeStyles.section} id="image-gallery-section" style={{ padding: "80px 40px" }}>
+          <h2 className={homeStyles.sectionTitle}>Image Gallery</h2>
+          
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "32px", marginTop: "32px" }}>
+            {(storefrontConfig.galleryItems || []).map((item, index) => (
+              <div
+                key={item.id}
+                className={editorStyles.cardContainer}
+                style={{ 
+                  cursor: "pointer", 
+                  backgroundColor: "#FFFFFF", 
+                  padding: "14px 14px 22px 14px", 
+                  boxShadow: "0 10px 20px rgba(120, 108, 102, 0.08)", 
+                  border: "1px solid rgba(120, 108, 102, 0.15)",
+                  borderRadius: "4px",
+                  display: "flex",
+                  flexDirection: "column",
+                  position: "relative"
+                }}
+              >
+                <div className={editorStyles.cardEditOverlay}>
+                  <button className={editorStyles.editButton} style={{ position: "static" }} onClick={() => openEditGallery(index)}>
+                    ✏️ Edit Polaroid
+                  </button>
+                </div>
+                
+                <div style={{ position: "relative", width: "100%", aspectRatio: "1", overflow: "hidden", backgroundColor: "#fcfcfb" }}>
+                  <img
+                    src={item.src}
+                    alt={item.alt}
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                </div>
+                <span className={homeStyles.wavePolaroidTitle} style={{ marginTop: "14px", fontFamily: "var(--font-serif), serif", fontSize: "15px", textAlign: "center", color: "var(--color-dark-espresso)", fontWeight: "600" }}>
+                  {item.title}
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Testimonials Section */}
+        <section className={homeStyles.section} id="testimonials-section" style={{ padding: "80px 40px" }}>
+          <h2 className={homeStyles.sectionTitle}>Testimonials</h2>
+          <div className={homeStyles.testimonialsGrid}>
+            {(storefrontConfig.testimonials || []).map((t, idx) => (
+              <div className={`${homeStyles.testimonialCard} ${editorStyles.cardContainer}`} id={`testimonial-card-${idx+1}`} key={t.id}>
+                <div className={editorStyles.cardEditOverlay}>
+                  <button className={editorStyles.editButton} style={{ position: "static" }} onClick={() => openEditTestimonial(idx)}>
+                    ✏️ Edit Quote
+                  </button>
+                </div>
+
+                <div className={homeStyles.pendantLine}>
+                  <div className={homeStyles.pendantDot} />
+                </div>
+                <div className={homeStyles.avatarWrapper}>
+                  <Image
+                    src={t.avatarUrl}
+                    alt={`Portrait of ${t.name}, verified customer`}
+                    fill
+                    sizes="90px"
+                    className={homeStyles.avatarImage}
+                  />
+                </div>
+                <div className={homeStyles.speechBubble}>
+                  <p className={homeStyles.testimonialText}>
+                    &ldquo;{t.text}&rdquo;
+                  </p>
+                  <span className={homeStyles.testimonialAuthor}>— {t.name}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
       </div>
 
       {/* EDIT MODALS OVERLAYS */}
@@ -703,25 +948,44 @@ export default function StorefrontVisualEditor() {
             </div>
             <div className={editorStyles.formGroup}>
               <span className={editorStyles.label}>Category</span>
-              <select
+              <input
+                type="text"
                 className={editorStyles.input}
                 value={productForm.category}
                 onChange={(e) => setProductForm(prev => ({ ...prev, category: e.target.value }))}
-              >
-                <option value="Pottery">Pottery</option>
-                <option value="Textiles">Textiles</option>
-                <option value="Leather">Leather</option>
-              </select>
+                placeholder="e.g. Studio Pottery"
+              />
             </div>
             <div className={editorStyles.formGroup}>
-              <span className={editorStyles.label}>Price (USD)</span>
+              <span className={editorStyles.label}>Discounted Price (INR ₹)</span>
               <input
                 type="number"
                 step="0.01"
                 className={editorStyles.input}
                 value={productForm.price}
                 onChange={(e) => setProductForm(prev => ({ ...prev, price: e.target.value }))}
-                placeholder="45.00"
+                placeholder="2500.00"
+              />
+            </div>
+            <div className={editorStyles.formGroup}>
+              <span className={editorStyles.label}>Original Price (INR ₹) (Optional)</span>
+              <input
+                type="number"
+                step="0.01"
+                className={editorStyles.input}
+                value={productForm.originalPrice}
+                onChange={(e) => setProductForm(prev => ({ ...prev, originalPrice: e.target.value }))}
+                placeholder="3500.00"
+              />
+            </div>
+            <div className={editorStyles.formGroup}>
+              <span className={editorStyles.label}>Available Sizes (comma-separated, e.g. S, M, L) (Optional)</span>
+              <input
+                type="text"
+                className={editorStyles.input}
+                value={productForm.sizes}
+                onChange={(e) => setProductForm(prev => ({ ...prev, sizes: e.target.value }))}
+                placeholder="S, M, L, XL"
               />
             </div>
             <div className={editorStyles.formGroup}>
@@ -736,7 +1000,7 @@ export default function StorefrontVisualEditor() {
             </div>
             
             <div className={editorStyles.formGroup}>
-              <span className={editorStyles.label}>Upload Product Image</span>
+              <span className={editorStyles.label}>Upload Product Main Image</span>
               <input
                 type="file"
                 className={editorStyles.input}
@@ -751,6 +1015,55 @@ export default function StorefrontVisualEditor() {
               )}
             </div>
 
+            <div className={editorStyles.formGroup}>
+              <span className={editorStyles.label}>Other Photos (Gallery)</span>
+              
+              <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", marginBottom: "12px" }}>
+                {productForm.otherImageUrls?.map((url, idx) => (
+                  <div key={idx} style={{ position: "relative", width: "80px", height: "80px", borderRadius: "6px", overflow: "hidden", border: "1px solid #d3cdbf" }}>
+                    <img src={url} alt={`Gallery ${idx + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <button
+                      type="button"
+                      onClick={() => setProductForm(prev => ({
+                        ...prev,
+                        otherImageUrls: prev.otherImageUrls.filter((_, i) => i !== idx)
+                      }))}
+                      style={{
+                        position: "absolute",
+                        top: "2px",
+                        right: "2px",
+                        backgroundColor: "rgba(220, 53, 69, 0.9)",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "50%",
+                        width: "18px",
+                        height: "18px",
+                        fontSize: "10px",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center"
+                      }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              <input
+                type="file"
+                multiple
+                className={editorStyles.input}
+                accept="image/*"
+                onChange={handleOtherImageUpload}
+                disabled={isUploading}
+              />
+              <span style={{ fontSize: "11px", color: "#706f6c" }}>
+                Upload multiple auxiliary images to show on the details page.
+              </span>
+            </div>
+
             <div className={editorStyles.modalActions}>
               <button onClick={() => setActiveModal(null)} className={editorStyles.cancelBtn} disabled={isUploading}>Cancel</button>
               <button
@@ -760,6 +1073,133 @@ export default function StorefrontVisualEditor() {
               >
                 {activeModal === "product-add" ? "Register Product" : "Save Product Details"}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Gallery Polaroid Edit Modal */}
+      {activeModal === "gallery" && (
+        <div className={editorStyles.modalBackdrop}>
+          <div className={editorStyles.modal}>
+            <h3 className={editorStyles.modalTitle}>Curation: Gallery Polaroid Card</h3>
+            
+            {isUploading && (
+              <div style={{ backgroundColor: "#faf9f6", border: "1px solid #d3cdbf", padding: "12px", borderRadius: "6px", marginBottom: "20px", fontSize: "13px", color: "var(--color-rose-taupe)", textAlign: "center" }}>
+                ⏳ {uploadProgress}
+              </div>
+            )}
+
+            <div className={editorStyles.formGroup}>
+              <span className={editorStyles.label}>Polaroid Title</span>
+              <input
+                type="text"
+                className={editorStyles.input}
+                value={galleryForm.title}
+                onChange={(e) => setGalleryForm(prev => ({ ...prev, title: e.target.value }))}
+                placeholder="e.g. Cotton Anarkali"
+              />
+            </div>
+
+            <div className={editorStyles.formGroup}>
+              <span className={editorStyles.label}>Image Alt Text</span>
+              <input
+                type="text"
+                className={editorStyles.input}
+                value={galleryForm.alt}
+                onChange={(e) => setGalleryForm(prev => ({ ...prev, alt: e.target.value }))}
+                placeholder="Brief description for accessibility"
+              />
+            </div>
+
+            <div className={editorStyles.formGroup}>
+              <span className={editorStyles.label}>Polaroid Curve Type</span>
+              <select
+                className={editorStyles.input}
+                value={galleryForm.type}
+                onChange={(e) => setGalleryForm(prev => ({ ...prev, type: e.target.value }))}
+              >
+                <option value="peak">Peak (Curved Up)</option>
+                <option value="trough">Trough (Curved Down)</option>
+              </select>
+            </div>
+
+            <div className={editorStyles.formGroup}>
+              <span className={editorStyles.label}>Upload Gallery Photo</span>
+              <input
+                type="file"
+                className={editorStyles.input}
+                accept="image/*"
+                onChange={handleGalleryFileChange}
+                disabled={isUploading}
+              />
+              {galleryForm.src && (
+                <div style={{ marginTop: "8px", fontSize: "11px", color: "#706f6c", wordBreak: "break-all" }}>
+                  Selected Image: {galleryForm.src}
+                </div>
+              )}
+            </div>
+
+            <div className={editorStyles.modalActions}>
+              <button onClick={() => setActiveModal(null)} className={editorStyles.cancelBtn} disabled={isUploading}>Cancel</button>
+              <button onClick={handleSaveGallery} className={editorStyles.saveBtn} disabled={isUploading}>Save Polaroid</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Testimonials Edit Modal */}
+      {activeModal === "testimonial" && (
+        <div className={editorStyles.modalBackdrop}>
+          <div className={editorStyles.modal}>
+            <h3 className={editorStyles.modalTitle}>Curation: Customer Review</h3>
+            
+            {isUploading && (
+              <div style={{ backgroundColor: "#faf9f6", border: "1px solid #d3cdbf", padding: "12px", borderRadius: "6px", marginBottom: "20px", fontSize: "13px", color: "var(--color-rose-taupe)", textAlign: "center" }}>
+                ⏳ {uploadProgress}
+              </div>
+            )}
+
+            <div className={editorStyles.formGroup}>
+              <span className={editorStyles.label}>Author Name</span>
+              <input
+                type="text"
+                className={editorStyles.input}
+                value={testimonialForm.name}
+                onChange={(e) => setTestimonialForm(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="e.g. Sarah J."
+              />
+            </div>
+
+            <div className={editorStyles.formGroup}>
+              <span className={editorStyles.label}>Review Quote Text</span>
+              <textarea
+                className={editorStyles.textarea}
+                value={testimonialForm.text}
+                onChange={(e) => setTestimonialForm(prev => ({ ...prev, text: e.target.value }))}
+                placeholder="Enter customer feedback..."
+              />
+            </div>
+
+            <div className={editorStyles.formGroup}>
+              <span className={editorStyles.label}>Upload Customer Avatar</span>
+              <input
+                type="file"
+                className={editorStyles.input}
+                accept="image/*"
+                onChange={handleTestimonialFileChange}
+                disabled={isUploading}
+              />
+              {testimonialForm.avatarUrl && (
+                <div style={{ marginTop: "8px", fontSize: "11px", color: "#706f6c", wordBreak: "break-all" }}>
+                  Selected Avatar: {testimonialForm.avatarUrl}
+                </div>
+              )}
+            </div>
+
+            <div className={editorStyles.modalActions}>
+              <button onClick={() => setActiveModal(null)} className={editorStyles.cancelBtn} disabled={isUploading}>Cancel</button>
+              <button onClick={handleSaveTestimonial} className={editorStyles.saveBtn} disabled={isUploading}>Save Review</button>
             </div>
           </div>
         </div>

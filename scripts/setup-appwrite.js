@@ -92,6 +92,9 @@ async function setup() {
     await createAttributeIfNotExist(productsCollectionId, 'price', databases.createFloatAttribute.bind(databases), true);
     await createAttributeIfNotExist(productsCollectionId, 'stock', databases.createIntegerAttribute.bind(databases), false, 0, 1000000, 0);
     await createAttributeIfNotExist(productsCollectionId, 'imageUrl', databases.createStringAttribute.bind(databases), 500, true);
+    await createAttributeIfNotExist(productsCollectionId, 'otherImageUrls', databases.createStringAttribute.bind(databases), 5000, false);
+    await createAttributeIfNotExist(productsCollectionId, 'originalPrice', databases.createFloatAttribute.bind(databases), false);
+    await createAttributeIfNotExist(productsCollectionId, 'sizes', databases.createStringAttribute.bind(databases), 1000, false);
 
     // Orders Collection Setup
     await createCollectionIfNotExist(ordersCollectionId, 'Orders');

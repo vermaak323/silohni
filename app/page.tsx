@@ -14,7 +14,7 @@ const latestArrivals = [
     alt: "Minimalist handcrafted ceramic vase",
     tag: "Studio Pottery",
     name: "Minimalist Terracotta Vase",
-    price: "$72.00",
+    price: "₹72.00",
     category: "Pottery",
   },
   {
@@ -23,7 +23,7 @@ const latestArrivals = [
     alt: "Premium handwoven wool throw blanket",
     tag: "Artisan Textiles",
     name: "Woven Wool Throw Blanket",
-    price: "$145.00",
+    price: "₹145.00",
     category: "Textiles",
   },
   {
@@ -32,7 +32,7 @@ const latestArrivals = [
     alt: "Handcrafted dark espresso leather tote bag",
     tag: "Bespoke Leather",
     name: "Espresso Leather Tote",
-    price: "$280.00",
+    price: "₹280.00",
     category: "Leather",
   },
   {
@@ -41,7 +41,7 @@ const latestArrivals = [
     alt: "Artisan Ceramic Tableware Collection",
     tag: "Studio Pottery",
     name: "Ceramic Tableware Set",
-    price: "$110.00",
+    price: "₹110.00",
     category: "Pottery",
   },
   {
@@ -50,7 +50,7 @@ const latestArrivals = [
     alt: "Organic Spun Yarn and Threads",
     tag: "Artisan Textiles",
     name: "Spun Linen Yarn Pack",
-    price: "$55.00",
+    price: "₹55.00",
     category: "Textiles",
   },
 ];
@@ -149,7 +149,17 @@ export default function Home() {
       { id: "best-4", title: "Raw Organic Yarn", subtitle: "Natural Fibers", imageUrl: "/images/best_4.png" },
       { id: "best-5", title: "Home Fragrances", subtitle: "Candles & Scents", imageUrl: "/images/best_5.png" }
     ],
-    latestArrivalIds: [] as string[]
+    latestArrivalIds: [] as string[],
+    galleryItems: [
+      { id: "gallery-1", src: "/images/gallery_1.png", alt: "Cotton Anarkali Linen Dress", title: "Cotton Anarkali", type: "trough" },
+      { id: "gallery-2", src: "/images/gallery_2.png", alt: "Silk Straight Kurta", title: "Silk Straight", type: "peak" },
+      { id: "gallery-3", src: "/images/gallery_3.png", alt: "Georgette Flared Dress", title: "Georgette Flared", type: "trough" },
+      { id: "gallery-4", src: "/images/gallery_4.png", alt: "Chanderi Blend Suit", title: "Chanderi Blend", type: "peak" }
+    ],
+    testimonials: [
+      { id: "testimonial-1", name: "Sarah J.", avatarUrl: "/images/avatar_1.png", text: "Absolutely fell in love with their ceramics! The earthy finish and minimal design are perfect. The packaging was also completely plastic-free." },
+      { id: "testimonial-2", name: "Marcus V.", avatarUrl: "/images/avatar_2.png", text: "The woolen throws are incredibly cozy and heavy-weight. You can tell they were woven with care. Silohni is my absolute favorite home boutique now." }
+    ]
   });
 
   // Load session & announcement on mount, fetch products
@@ -172,6 +182,20 @@ export default function Home() {
     if (savedConfig) {
       try {
         const parsed = JSON.parse(savedConfig);
+        if (!parsed.galleryItems) {
+          parsed.galleryItems = [
+            { id: "gallery-1", src: "/images/gallery_1.png", alt: "Cotton Anarkali Linen Dress", title: "Cotton Anarkali", type: "trough" },
+            { id: "gallery-2", src: "/images/gallery_2.png", alt: "Silk Straight Kurta", title: "Silk Straight", type: "peak" },
+            { id: "gallery-3", src: "/images/gallery_3.png", alt: "Georgette Flared Dress", title: "Georgette Flared", type: "trough" },
+            { id: "gallery-4", src: "/images/gallery_4.png", alt: "Chanderi Blend Suit", title: "Chanderi Blend", type: "peak" }
+          ];
+        }
+        if (!parsed.testimonials) {
+          parsed.testimonials = [
+            { id: "testimonial-1", name: "Sarah J.", avatarUrl: "/images/avatar_1.png", text: "Absolutely fell in love with their ceramics! The earthy finish and minimal design are perfect. The packaging was also completely plastic-free." },
+            { id: "testimonial-2", name: "Marcus V.", avatarUrl: "/images/avatar_2.png", text: "The woolen throws are incredibly cozy and heavy-weight. You can tell they were woven with care. Silohni is my absolute favorite home boutique now." }
+          ];
+        }
         setStorefrontConfig(parsed);
         if (parsed.latestArrivalIds) {
           currentLatestArrivalIds = parsed.latestArrivalIds;
@@ -204,7 +228,7 @@ export default function Home() {
               alt: p.name,
               tag: p.category,
               name: p.name,
-              price: `$${p.price.toFixed(2)}`,
+              price: `₹${p.price.toFixed(2)}`,
               category: p.category,
             }));
             
@@ -741,7 +765,7 @@ export default function Home() {
                           {ord.items.map((i: any) => `${i.name} (x${i.quantity})`).join(", ")}
                         </p>
                         <div className={styles.orderFooter}>
-                          <span>Total: <strong>${ord.totalAmount.toFixed(2)}</strong></span>
+                          <span>Total: <strong>₹{ord.totalAmount.toFixed(2)}</strong></span>
                         </div>
                       </div>
                     ))
@@ -790,7 +814,7 @@ export default function Home() {
                         </div>
                         <div style={{ display: "flex", flexDirection: "column" }}>
                           <span style={{ fontSize: "13px", fontWeight: "600", color: "var(--color-dark-espresso)" }}>{item.name}</span>
-                          <span style={{ fontSize: "11px", color: "var(--color-rose-taupe)" }}>${item.price.toFixed(2)}</span>
+                          <span style={{ fontSize: "11px", color: "var(--color-rose-taupe)" }}>₹{item.price.toFixed(2)}</span>
                         </div>
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -805,7 +829,7 @@ export default function Home() {
                 <div style={{ borderTop: "1px solid rgba(120,108,102,0.15)", paddingTop: "16px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px" }}>
                     <span style={{ fontWeight: "600", fontSize: "15px" }}>Estimated Total:</span>
-                    <span style={{ fontWeight: "700", fontSize: "16px", color: "var(--color-rose-taupe)" }}>${cartTotal.toFixed(2)}</span>
+                    <span style={{ fontWeight: "700", fontSize: "16px", color: "var(--color-rose-taupe)" }}>₹{cartTotal.toFixed(2)}</span>
                   </div>
 
                   <button 
@@ -868,7 +892,7 @@ export default function Home() {
             ) : (
               <form onSubmit={handleCheckoutSubmit} className={styles.authForm} style={{ gap: "14px" }}>
                 <h3 className={styles.authTitle}>Delivery Checkout</h3>
-                <p className={styles.authSubtitle} style={{ marginBottom: "10px" }}>Enter details to complete your order of <strong>${cartTotal.toFixed(2)}</strong>.</p>
+                <p className={styles.authSubtitle} style={{ marginBottom: "10px" }}>Enter details to complete your order of <strong>₹{cartTotal.toFixed(2)}</strong>.</p>
                 
                 {checkoutError && <div className={styles.authErrorAlert}>{checkoutError}</div>}
 
@@ -971,7 +995,7 @@ export default function Home() {
               <p className={styles.heroDesc}>
                 {storefrontConfig.hero.description}
               </p>
-              <button className={styles.heroBtn} id="hero-cta">Explore the Collection</button>
+              <button className={styles.heroBtn} id="hero-cta" onClick={() => router.push("/products")}>Explore the Collection</button>
             </div>
           </div>
         </section>
@@ -985,7 +1009,7 @@ export default function Home() {
               <p className={styles.heroDesc} style={{ color: "var(--color-warm-gray)", fontSize: "14px" }}>
                 Explore our fresh collection of organic pottery, handwoven textiles, and slow-made garments designed for mindful living.
               </p>
-              <button className={styles.heroBtn} style={{ margin: 0 }}>
+              <button className={styles.heroBtn} style={{ margin: 0 }} onClick={() => router.push("/products")}>
                 Explore All Collection &rarr;
               </button>
             </div>
@@ -1015,7 +1039,12 @@ export default function Home() {
                 onScroll={handleScrollTrack}
               >
                 {filteredItems.map((item, index) => (
-                  <div className={`${styles.overlayCard} ${styles.scrollReveal} ${styles[`stagger${(index % 4) + 1}`]}`} key={item.id}>
+                  <div 
+                    className={`${styles.overlayCard} ${styles.scrollReveal} ${styles[`stagger${(index % 4) + 1}`]}`} 
+                    key={item.id}
+                    onClick={() => router.push(`/products/${item.id}`)}
+                    style={{ cursor: "pointer" }}
+                  >
                     <Image
                       src={item.src}
                       alt={item.alt}
@@ -1123,11 +1152,11 @@ export default function Home() {
         </section>
 
         {/* Image Gallery Section */}
-        <section className={`${styles.section} ${styles.scrollReveal}`} id="image-gallery-section" style={{ padding: "80px 0", overflow: "visible" }}>
+        <section className={`${styles.section} ${styles.scrollReveal}`} id="image-gallery-section" style={{ padding: "20px 0 240px 0", overflow: "visible" }}>
           <h2 className={styles.sectionTitle}>Image Gallery</h2>
           
           <div className={styles.waveGallerySection}>
-            <svg className={styles.waveSvgBackground} viewBox="0 0 1000 400" preserveAspectRatio="none">
+            <svg className={styles.waveSvgBackground} viewBox="0 80 1000 240" preserveAspectRatio="none">
               <path
                 className={styles.wavePath}
                 d="M 0 200 C 62.5 200, 62.5 280, 125 280 C 250 280, 250 120, 375 120 C 500 120, 500 280, 625 280 C 750 280, 750 120, 875 120 C 937.5 120, 937.5 200, 1000 200"
@@ -1139,7 +1168,7 @@ export default function Home() {
             </svg>
 
             <div className={styles.waveGalleryContainer}>
-              {galleryItems.map((item, index) => (
+              {(storefrontConfig.galleryItems || galleryItems).map((item, index) => (
                 <div
                   key={item.id}
                   className={`${styles.wavePolaroid} ${
@@ -1168,47 +1197,28 @@ export default function Home() {
         <section className={`${styles.section} ${styles.scrollReveal}`} id="testimonials-section">
           <h2 className={styles.sectionTitle}>Testimonials</h2>
           <div className={styles.testimonialsGrid}>
-            <div className={`${styles.testimonialCard} ${styles.scrollReveal} ${styles.stagger1}`} id="testimonial-card-1">
-              <div className={styles.pendantLine}>
-                <div className={styles.pendantDot} />
+            {(storefrontConfig.testimonials || []).map((t, idx) => (
+              <div className={`${styles.testimonialCard} ${styles.scrollReveal} ${styles[`stagger${(idx % 2) + 1}`]}`} id={`testimonial-card-${idx+1}`} key={t.id}>
+                <div className={styles.pendantLine}>
+                  <div className={styles.pendantDot} />
+                </div>
+                <div className={styles.avatarWrapper}>
+                  <Image
+                    src={t.avatarUrl}
+                    alt={`Portrait of ${t.name}, verified customer`}
+                    fill
+                    sizes="90px"
+                    className={styles.avatarImage}
+                  />
+                </div>
+                <div className={styles.speechBubble}>
+                  <p className={styles.testimonialText}>
+                    &ldquo;{t.text}&rdquo;
+                  </p>
+                  <span className={styles.testimonialAuthor}>— {t.name}</span>
+                </div>
               </div>
-              <div className={styles.avatarWrapper}>
-                <Image
-                  src="/images/avatar_1.png"
-                  alt="Portrait of Sarah Jenkins, verified customer"
-                  fill
-                  sizes="90px"
-                  className={styles.avatarImage}
-                />
-              </div>
-              <div className={styles.speechBubble}>
-                <p className={styles.testimonialText}>
-                  &ldquo;Absolutely fell in love with their ceramics! The earthy finish and minimal design are perfect. The packaging was also completely plastic-free.&rdquo;
-                </p>
-                <span className={styles.testimonialAuthor}>— Sarah J.</span>
-              </div>
-            </div>
-
-            <div className={`${styles.testimonialCard} ${styles.scrollReveal} ${styles.stagger2}`} id="testimonial-card-2">
-              <div className={styles.pendantLine}>
-                <div className={styles.pendantDot} />
-              </div>
-              <div className={styles.avatarWrapper}>
-                <Image
-                  src="/images/avatar_2.png"
-                  alt="Portrait of Marcus Vance, verified customer"
-                  fill
-                  sizes="90px"
-                  className={styles.avatarImage}
-                />
-              </div>
-              <div className={styles.speechBubble}>
-                <p className={styles.testimonialText}>
-                  &ldquo;The woolen throws are incredibly cozy and heavy-weight. You can tell they were woven with care. Silohni is my absolute favorite home boutique now.&rdquo;
-                </p>
-                <span className={styles.testimonialAuthor}>— Marcus V.</span>
-              </div>
-            </div>
+            ))}
           </div>
         </section>
 

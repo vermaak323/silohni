@@ -233,7 +233,7 @@ export default function AdminPage() {
           id: p.$id,
           name: p.name,
           category: p.category,
-          price: `$${p.price.toFixed(2)}`,
+          price: `₹${p.price.toFixed(2)}`,
           stock: p.stock,
           imageUrl: p.imageUrl,
         }));
@@ -462,7 +462,7 @@ export default function AdminPage() {
               <div className={styles.statsGrid}>
                 <div className={styles.statCard}>
                   <div className={styles.statHeader}>Total Revenue</div>
-                  <div className={styles.statValue}>${totalRevenue.toFixed(2)}</div>
+                  <div className={styles.statValue}>₹{totalRevenue.toFixed(2)}</div>
                   <span className={styles.statSubtext}>
                     <span className={styles.trendUp}>▲ +18.4%</span> vs last month
                   </span>
@@ -500,37 +500,37 @@ export default function AdminPage() {
                 <div className={styles.chartTitle}>Weekly Sales Summary</div>
                 <div className={styles.chartVisual}>
                   <div className={styles.chartBarWrapper}>
-                    <span className={styles.chartValue}>$1,400</span>
+                    <span className={styles.chartValue}>₹1,400</span>
                     <div className={styles.chartBar} style={{ height: "45%" }} />
                     <span className={styles.chartLabel}>Mon</span>
                   </div>
                   <div className={styles.chartBarWrapper}>
-                    <span className={styles.chartValue}>$1,800</span>
+                    <span className={styles.chartValue}>₹1,800</span>
                     <div className={styles.chartBar} style={{ height: "60%" }} />
                     <span className={styles.chartLabel}>Tue</span>
                   </div>
                   <div className={styles.chartBarWrapper}>
-                    <span className={styles.chartValue}>$1,100</span>
+                    <span className={styles.chartValue}>₹1,100</span>
                     <div className={styles.chartBar} style={{ height: "35%" }} />
                     <span className={styles.chartLabel}>Wed</span>
                   </div>
                   <div className={styles.chartBarWrapper}>
-                    <span className={styles.chartValue}>$2,300</span>
+                    <span className={styles.chartValue}>₹2,300</span>
                     <div className={styles.chartBar} style={{ height: "75%" }} />
                     <span className={styles.chartLabel}>Thu</span>
                   </div>
                   <div className={styles.chartBarWrapper}>
-                    <span className={styles.chartValue}>$2,600</span>
+                    <span className={styles.chartValue}>₹2,600</span>
                     <div className={styles.chartBar} style={{ height: "85%" }} />
                     <span className={styles.chartLabel}>Fri</span>
                   </div>
                   <div className={styles.chartBarWrapper}>
-                    <span className={styles.chartValue}>$1,900</span>
+                    <span className={styles.chartValue}>₹1,900</span>
                     <div className={styles.chartBar} style={{ height: "65%" }} />
                     <span className={styles.chartLabel}>Sat</span>
                   </div>
                   <div className={styles.chartBarWrapper}>
-                    <span className={styles.chartValue}>$2,800</span>
+                    <span className={styles.chartValue}>₹2,800</span>
                     <div className={styles.chartBar} style={{ height: "95%" }} />
                     <span className={styles.chartLabel}>Sun</span>
                   </div>
@@ -583,7 +583,7 @@ export default function AdminPage() {
                   <ul style={{ fontSize: "13px", display: "flex", flexDirection: "column", gap: "12px", listStyle: "none" }}>
                     {orders.slice(0, 4).map((o) => (
                       <li key={o.$id} style={{ borderBottom: "1px solid rgba(214,183,170,0.06)", paddingBottom: "8px" }}>
-                        <span style={{ color: "var(--color-rose-taupe)" }}>{new Date(o.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>: Order #{o.$id.slice(-6).toUpperCase()} placed (${o.totalAmount.toFixed(2)})
+                        <span style={{ color: "var(--color-rose-taupe)" }}>{new Date(o.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>: Order #{o.$id.slice(-6).toUpperCase()} placed (₹{o.totalAmount.toFixed(2)})
                       </li>
                     ))}
                     {orders.length === 0 && (
@@ -649,7 +649,7 @@ export default function AdminPage() {
                         <td style={{ color: "rgba(120, 108, 102, 0.7)", fontSize: "12px" }}>
                           {o.items.map(item => `${item.name} (x${item.quantity})`).join(", ")}
                         </td>
-                        <td><strong>${o.totalAmount.toFixed(2)}</strong></td>
+                        <td><strong>₹{o.totalAmount.toFixed(2)}</strong></td>
                         <td>
                           <span className={`${styles.statusBadge} ${
                             o.status === "Completed" ? styles.badgeSuccess : styles.badgeWarning

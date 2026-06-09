@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/appwrite";
+import { getSessionUser } from "@/lib/session";
 import { Query } from "node-appwrite";
 
 export async function GET() {
@@ -19,7 +20,12 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const { name, category, price, stock, imageUrl } = await request.json();
+    const user = await getSessionUser();
+    if (!user || user.role !== "admin") {
+      return NextResponse.json({ error: "Forbidden. Admin access required." }, { status: 403 });
+    }
+
+    const { name, category, price, stock, imageUrl, otherImageUrls, originalPrice, sizes } = await request.json();
     if (!name || !category || !price || stock === undefined || !imageUrl) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
@@ -38,6 +44,9 @@ export async function POST(request: Request) {
         price: parseFloat(price),
         stock: parseInt(stock, 10),
         imageUrl,
+        otherImageUrls: Array.isArray(otherImageUrls) ? JSON.stringify(otherImageUrls) : (otherImageUrls || ""),
+        originalPrice: originalPrice ? parseFloat(originalPrice) : null,
+        sizes: Array.isArray(sizes) ? JSON.stringify(sizes) : (sizes || ""),
       }
     );
 
@@ -50,7 +59,12 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
-    const { productId, name, category, price, stock, imageUrl } = await request.json();
+    const user = await getSessionUser();
+    if (!user || user.role !== "admin") {
+      return NextResponse.json({ error: "Forbidden. Admin access required." }, { status: 403 });
+    }
+
+    const { productId, name, category, price, stock, imageUrl, otherImageUrls, originalPrice, sizes } = await request.json();
     if (!productId) {
       return NextResponse.json({ error: "Missing product ID" }, { status: 400 });
     }
@@ -65,6 +79,15 @@ export async function PATCH(request: Request) {
     if (price !== undefined) updateData.price = parseFloat(price);
     if (stock !== undefined) updateData.stock = parseInt(stock, 10);
     if (imageUrl !== undefined) updateData.imageUrl = imageUrl;
+    if (otherImageUrls !== undefined) {
+      updateData.otherImageUrls = Array.isArray(otherImageUrls) ? JSON.stringify(otherImageUrls) : otherImageUrls;
+    }
+    if (originalPrice !== undefined) {
+      updateData.originalPrice = originalPrice ? parseFloat(originalPrice) : null;
+    }
+    if (sizes !== undefined) {
+      updateData.sizes = Array.isArray(sizes) ? JSON.stringify(sizes) : sizes;
+    }
 
     const updatedProduct = await databases.updateDocument(
       databaseId,

@@ -591,6 +591,13 @@
   cursor: pointer;
 }
 
+.cardImage {
+  object-fit: cover;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 .bestCard:hover .cardImage {
   transform: scale(1.05);
 }
@@ -663,7 +670,7 @@
   margin-right: calc(50% - 50vw);
   position: relative;
   overflow: visible;
-  height: 580px;
+  height: 380px;
   display: flex;
   align-items: center;
 }
@@ -763,10 +770,10 @@
   font-weight: 600;
 }
 
-/* Precise horizontal alignment matching viewBox="0 0 1000 400" with unique animation timings */
+/* Precise horizontal alignment matching viewBox="0 80 1000 240" with unique animation timings */
 .wavePolaroid:nth-child(1) {
   left: 12.5%;
-  top: 466px;
+  top: 376px;
   --hover-translate: -8px;
   --rotate-start: -2deg;
   --rotate-end: 2deg;
@@ -774,7 +781,7 @@
 }
 .wavePolaroid:nth-child(2) {
   left: 37.5%;
-  top: 234px;
+  top: 123px;
   --hover-translate: -8px;
   --rotate-start: 1.5deg;
   --rotate-end: -1.5deg;
@@ -782,7 +789,7 @@
 }
 .wavePolaroid:nth-child(3) {
   left: 62.5%;
-  top: 466px;
+  top: 376px;
   --hover-translate: -8px;
   --rotate-start: -1.8deg;
   --rotate-end: 1.8deg;
@@ -790,7 +797,7 @@
 }
 .wavePolaroid:nth-child(4) {
   left: 87.5%;
-  top: 234px;
+  top: 123px;
   --hover-translate: -8px;
   --rotate-start: 2deg;
   --rotate-end: -2deg;
